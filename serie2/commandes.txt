@@ -1,0 +1,5 @@
+1;alice@gmail.com;49.90;payee
+2;bob@gmail.com;15.00;annulee
+3;alice@gmail.com;19.90;payee
+4;charlie@gmail.com;120.0;en_attente
+5;bob@gmail.com;35.0;payee

@@ -1,0 +1,99 @@
+# td14_ex4.py
+from dataclasses import dataclass, field
+from typing import List
+from td14_ex3 import Produit # Utilise la version améliorée de Produit
+# On doit ré-importer LigneFacture ou la recopier ici pour qu'elle puisse utiliser Produit de td14_ex3
+
+@dataclass
+class LigneFacture:
+    # Recopié de l'Exercice 2 mais utilisant le Produit de l'Ex 3
+    produit: Produit
+    quantite: int
+    total_ht: float = field(init=False)
+    total_ttc: float = field(init=False)
+
+    def __post_init__(self):
+        if self.quantite <= 0:
+            raise ValueError(f"La quantité doit être positive (reçue: {self.quantite}).")
+        self.total_ht = self.quantite * self.produit.prix_ht
+        self.total_ttc = self.quantite * self.produit.prix_ttc()
+
+    def __str__(self) -> str:
+        ht_str = Produit.format_euro(self.total_ht)
+        ttc_str = Produit.format_euro(self.total_ttc)
+        return f"  - {self.quantite} x {self.produit.nom[:20]:<20} = {ht_str} HT / {ttc_str} TTC"
+
+
+@dataclass
+class Facture:
+    """
+    Agrège les LignesFacture, calcule les totaux dans __post_init__.
+    """
+    numero: int
+    client: str
+    lignes: List[LigneFacture]
+    
+    # Champs dérivés
+    total_ht: float = field(init=False)
+    total_ttc: float = field(init=False)
+    
+    def __post_init__(self):
+        """
+        Vérifie les contraintes et calcule les totaux finaux.
+        """
+        if not self.lignes:
+            raise ValueError("Une facture doit contenir au moins une ligne.")
+        
+        # Calcul des totaux par sommation des attributs des lignes
+        self.total_ht = sum(ligne.total_ht for ligne in self.lignes)
+        self.total_ttc = sum(ligne.total_ttc for ligne in self.lignes)
+
+    def __str__(self) -> str:
+        """
+        Affichage complet de la facture.
+        """
+        output = f"===== FACTURE N° {self.numero} | Client : {self.client} =====\n"
+        output += "\nDETAILS DES LIGNES :\n"
+        
+        # Ajout des lignes individuelles
+        for ligne in self.lignes:
+            output += str(ligne) + "\n"
+        
+        # Ajout des totaux formatés
+        output += "\n-----------------------------------------------------\n"
+        output += f"TOTAL HT : {Produit.format_euro(self.total_ht)}\n"
+        output += f"TOTAL TTC: {Produit.format_euro(self.total_ttc)}\n"
+        output += "====================================================="
+        return output
+
+# --- Bloc principal ---
+if __name__ == "__main__":
+    
+    # 1. Préparation
+    p_souris = Produit("Souris Laser", 30.0)
+    p_support = Produit("Support Ergonomique", 55.0, 0.055)
+    
+    lignes_fact = [
+        LigneFacture(p_souris, 3), # 3 x 30.0 = 90.0 HT
+        LigneFacture(p_support, 1), # 1 x 55.0 = 55.0 HT
+    ]
+    
+    # 2. Création de la facture valide
+    facture_a = Facture(
+        numero=2025001,
+        client="Alice Martin",
+        lignes=lignes_fact
+    )
+    
+    print("--- Facture Valide ---")
+    print(facture_a) # Vérification de __post_init__ (calcul des totaux) et __str__
+    
+    # Vérification Totaux : (90.0 + 55.0) = 145.0 HT
+    print(f"\nVérification Total HT : {facture_a.total_ht} (Attendu: 145.0)")
+    
+    # 3. Test d'un cas invalide
+    print("\n--- Test d'une Facture sans lignes ---")
+    try:
+        Facture(numero=2025002, client="Bob", lignes=[]) 
+    except ValueError as e:
+        print(f"ERREUR interceptée : {e}")
